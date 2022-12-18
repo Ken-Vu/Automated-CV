@@ -1,0 +1,83 @@
+---
+name: Ken 
+surname: Vu
+position: "Graduate Student in Statistics"
+address: "California State University - East Bay, Hayward, CA"
+email: "ken.vu.777@gmail.com"
+github: Ken-Vu
+linkedin: kenvu1
+headcolor: "000000"
+date: "`r format(Sys.time(), '%B %Y')`"
+output: 
+  vitae::awesomecv:
+    page_total: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(pacman)
+p_load(vitae, googlesheets4, here, dplyr, glue, lubridate, fs, purrr, tidyr, stringr)
+```
+
+
+```{r get data, include=FALSE}
+#### read in your google sheets data for things like:
+#### jobs, projects, research, zenodo dois, skills
+read_subsheet <- function(subsh, sh="https://docs.google.com/spreadsheets/d/1SDKSgb824UXOfz8GdMf8d8GBhqD4i-uZiR93uikmxc4/edit?usp=sharing"){
+  
+  read_sheet(sh, sheet = subsh)
+  
+}
+  
+fields <- c("jobs", "education","service", "skills")
+gs4_auth()
+all_data <- fields %>%
+  map(~read_subsheet(.)) %>%
+  set_names(fields)
+```
+
+
+# Education 
+```{r}
+all_data %>%
+  pluck("education") %>%
+  fill(-details) %>%
+  mutate(
+    across(
+      contains("date"),
+      ~ str_c(
+        month(.x, label = TRUE), " ", year(.x)
+        )
+      )
+    ) %>%
+  mutate(end_date = replace_na(end_date, "Present")) %>%
+  detailed_entries(
+    when = glue("{start_date} — {end_date}"),
+    what = degree,
+    where = loc,
+    with = uni,
+    why = details
+  )
+```
+
+# Professional Experience
+```{r jobs}
+all_data %>%
+  pluck("jobs") %>%
+  fill(-tasks) %>%
+  mutate(across(contains("date"), 
+                ~ str_c(month(.x, label = TRUE),
+                        " ",
+                        year(.x))
+                )
+    ) %>%
+  mutate(end_date = replace_na(end_date, "Present")) %>%
+  
+  detailed_entries(
+    what = role,
+    when = glue("{start_date} — {end_date}"),
+    with = company,
+    where = where,
+    why = tasks)
+```
+
