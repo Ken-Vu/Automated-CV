@@ -19,7 +19,6 @@ library(pacman)
 p_load(vitae, googlesheets4, here, dplyr, glue, lubridate, fs, purrr, tidyr, stringr)
 ```
 
-
 ```{r get data, include=FALSE}
 #### read in your google sheets data for things like:
 #### jobs, projects, research, zenodo dois, skills
@@ -29,15 +28,15 @@ read_subsheet <- function(subsh, sh="https://docs.google.com/spreadsheets/d/1SDK
   
 }
   
-fields <- c("jobs", "education","service", "skills")
+fields <- c("jobs", "education","service", "affiliations", "skills")
 gs4_auth()
 all_data <- fields %>%
   map(~read_subsheet(.)) %>%
   set_names(fields)
 ```
 
+# Education
 
-# Education 
 ```{r}
 all_data %>%
   pluck("education") %>%
@@ -61,9 +60,31 @@ all_data %>%
 ```
 
 # Professional Experience
+
 ```{r jobs}
 all_data %>%
   pluck("jobs") %>%
+  fill(-c(company, where, tasks)) %>%
+  mutate(across(contains("date"), 
+                ~ str_c(month(.x, label = TRUE),
+                        " ",
+                        year(.x))
+                )
+    ) %>%
+  mutate(end_date = replace_na(end_date, "Present")) %>%
+  
+  detailed_entries(
+    what = role,
+    when = glue("{start_date} — {end_date}"),
+    with = company,
+    where = where,
+    why = tasks)
+```
+# Community Service
+
+```{r}
+all_data %>%
+  pluck("service") %>%
   fill(-tasks) %>%
   mutate(across(contains("date"), 
                 ~ str_c(month(.x, label = TRUE),
@@ -80,4 +101,19 @@ all_data %>%
     where = where,
     why = tasks)
 ```
+
+
+# Skills
+
+```{r}
+all_data %>% 
+  pluck("skills") %>%
+  group_by(category) %>% 
+  mutate(skill = paste(skill, collapse = ", ")) %>% 
+  ungroup %>% 
+  unique() %>%
+  detailed_entries(what = skill, with = category)
+```
+
+# Project Experience
 
