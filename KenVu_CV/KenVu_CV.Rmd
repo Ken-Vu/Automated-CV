@@ -28,8 +28,8 @@ read_subsheet <- function(subsh, sh="https://docs.google.com/spreadsheets/d/1SDK
   
 }
   
-fields <- c("jobs", "education","service", "affiliations", "skills")
-gs4_auth()
+fields <- c("jobs", "education","service", "affiliations", "skills", "project")
+# gs4_auth()
 all_data <- fields %>%
   map(~read_subsheet(.)) %>%
   set_names(fields)
@@ -59,7 +59,7 @@ all_data %>%
   )
 ```
 
-# Professional Experience
+# Work Experience
 
 ```{r jobs}
 all_data %>%
@@ -116,4 +116,36 @@ all_data %>%
 ```
 
 # Project Experience
+```{r}
+all_data %>%
+  pluck("project") %>%
+  fill(-tasks) %>%
+  mutate(across(contains("date"), 
+                ~ str_c(month(.x, label = TRUE),
+                        " ",
+                        year(.x))
+                )
+    ) %>%
+  mutate(end_date = replace_na(end_date, "Present")) %>%
+  detailed_entries(
+    where = ifelse(name!="Event Category Disparities in Elm City Stories",
+                   glue("{start_date} — {end_date}"),
+                   glue("{end_date}")),
+    why = tasks,
+    with = name,
+    what = location
+  )
+  
+```
+
+# Professional Affiliations
+```{r}
+all_data %>%
+  pluck("affiliations") %>%
+  detailed_entries(
+    with=where,
+    where=when,
+    what=what
+  )
+```
 
